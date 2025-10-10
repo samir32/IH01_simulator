@@ -1,0 +1,542 @@
+import { useState, useEffect } from 'react';
+import { useLanguage } from './language-context';
+
+export interface TreeItemData {
+  id: string;
+  code: string;
+  description: string;
+  type: 'location' | 'equipment' | 'assembly' | 'part';
+  quantity?: number;
+  unit?: string;
+  children?: TreeItemData[];
+  isExpanded?: boolean;
+}
+
+// Function to sort tree data by ID recursively
+function sortTreeByID(data: TreeItemData[]): TreeItemData[] {
+  return data
+    .map(item => ({
+      ...item,
+      children: item.children ? sortTreeByID(item.children) : undefined
+    }))
+    .sort((a, b) => {
+      // Convert IDs to numbers for proper numeric sorting
+      const numA = parseInt(a.id);
+      const numB = parseInt(b.id);
+      
+      // If both are valid numbers, sort numerically
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+      }
+      
+      // If one or both are not numbers, sort alphabetically
+      return a.id.localeCompare(b.id);
+    });
+}
+
+const defaultTreeData: TreeItemData[] = [
+  {
+    id: '1',
+    code: '031T2-K2',
+    description: 'TRAIN DE LAMINAGE',
+    type: 'location',
+    children: [
+      {
+        id: '2',
+        code: '031472',
+        description: 'CONVEYOR SYSTEM #1064743',
+        type: 'equipment',
+        quantity: 1,
+        unit: 'EA',
+        children: [
+          {
+            id: '3',
+            code: '031472-ASM01',
+            description: 'DRIVE ASSEMBLY',
+            type: 'assembly',
+            quantity: 1,
+            unit: 'EA',
+            children: [
+              {
+                id: '4',
+                code: '711022',
+                description: 'MOTOR, 5HP #1073362',
+                type: 'part',
+                quantity: 1,
+                unit: 'EA'
+              },
+              {
+                id: '5',
+                code: '570612',
+                description: 'COUPLING, FLEXIBLE #1673168',
+                type: 'part',
+                quantity: 1,
+                unit: 'EA'
+              }
+            ]
+          },
+          {
+            id: '6',
+            code: '031472-ASM02',
+            description: 'BELT ASSEMBLY',
+            type: 'assembly',
+            quantity: 1,
+            unit: 'EA',
+            children: [
+              {
+                id: '7',
+                code: '570613',
+                description: 'CONVEYOR BELT, 1200MM #1673198',
+                type: 'part',
+                quantity: 1,
+                unit: 'EA'
+              },
+              {
+                id: '8',
+                code: '570614',
+                description: 'BELT TENSIONER #167536E',
+                type: 'part',
+                quantity: 2,
+                unit: 'EA'
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: '9',
+        code: '030776',
+        description: 'PACKAGING MACHINE #644596DA',
+        type: 'equipment',
+        quantity: 1,
+        unit: 'EA',
+        children: [
+          {
+            id: '10',
+            code: '030776-ASM01',
+            description: 'SEALING UNIT ASSEMBLY',
+            type: 'assembly',
+            quantity: 1,
+            unit: 'EA',
+            children: [
+              {
+                id: '11',
+                code: '570631',
+                description: 'HEATING ELEMENT #167538E',
+                type: 'part',
+                quantity: 2,
+                unit: 'EA'
+              },
+              {
+                id: '12',
+                code: '711023',
+                description: 'TEMPERATURE SENSOR #1073363',
+                type: 'part',
+                quantity: 1,
+                unit: 'EA'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+];
+
+// Function to get the first root item's code
+function getFirstRootCode(data: TreeItemData[]): string {
+  if (data.length > 0) {
+    return data[0].code;
+  }
+  return '031T2-K2'; // fallback
+}
+
+interface TreeItemProps {
+  item: TreeItemData;
+  level: number;
+  onUpdate: (item: TreeItemData) => void;
+  onDelete: (id: string) => void;
+  onAdd: (parentId: string) => void;
+}
+
+function TreeItem({ item, level, onUpdate, onDelete, onAdd }: TreeItemProps) {
+  const [isExpanded, setIsExpanded] = useState(item.isExpanded || false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    code: item.code,
+    description: item.description,
+    type: item.type,
+    quantity: item.quantity?.toString() || '',
+    unit: item.unit || ''
+  });
+  const { t } = useLanguage();
+  
+  const hasChildren = item.children && item.children.length > 0;
+  
+  const getIcon = () => {
+    if (hasChildren) {
+      return isExpanded ? '⊟' : '⊞';
+    }
+    
+    switch (item.type) {
+      case 'location':
+        return '🏭';
+      case 'equipment':
+        return '🔧';
+      case 'assembly':
+        return '📦';
+      case 'part':
+        return '🔩';
+      default:
+        return '•';
+    }
+  };
+  
+  // SAP-style color coding
+  const getSapRowColor = () => {
+    switch (item.type) {
+      case 'location':
+        return 'bg-gray-100'; // Grey for functional locations
+      case 'equipment':
+        return 'bg-green-100'; // Green for equipment
+      case 'assembly':
+        return 'bg-yellow-100'; // Yellow for assemblies
+      case 'part':
+        return 'bg-red-100'; // Red for parts
+      default:
+        return 'bg-white';
+    }
+  };
+  
+  const handleSave = () => {
+    const updatedItem: TreeItemData = {
+      ...item,
+      code: editForm.code,
+      description: editForm.description,
+      type: editForm.type as TreeItemData['type'],
+      quantity: editForm.quantity ? parseInt(editForm.quantity) : undefined,
+      unit: editForm.unit || undefined
+    };
+    onUpdate(updatedItem);
+    setIsEditing(false);
+  };
+  
+  const handleCancel = () => {
+    setEditForm({
+      code: item.code,
+      description: item.description,
+      type: item.type,
+      quantity: item.quantity?.toString() || '',
+      unit: item.unit || ''
+    });
+    setIsEditing(false);
+  };
+  
+  return (
+    <div>
+      <div 
+        className={`flex items-center hover:bg-gray-200 border-b border-gray-300 ${getSapRowColor()}`}
+        style={{ paddingLeft: `${level * 16 + 4}px` }}
+      >
+        <button 
+          className="w-4 h-4 text-xs mr-1 hover:bg-gray-300"
+          onClick={() => hasChildren && setIsExpanded(!isExpanded)}
+        >
+          {getIcon()}
+        </button>
+        
+        {isEditing ? (
+          <div className="flex-1 grid grid-cols-12 gap-1 py-1 text-xs">
+            <input
+              type="text"
+              value={editForm.code}
+              onChange={(e) => setEditForm({...editForm, code: e.target.value})}
+              className="col-span-2 border border-gray-400 px-1 bg-white"
+            />
+            <input
+              type="text"
+              value={editForm.description}
+              onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+              className="col-span-4 border border-gray-400 px-1 bg-white"
+            />
+            <input
+              type="text"
+              value={editForm.quantity}
+              onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
+              className="col-span-1 border border-gray-400 px-1 bg-white text-center"
+            />
+            <input
+              type="text"
+              value={editForm.unit}
+              onChange={(e) => setEditForm({...editForm, unit: e.target.value})}
+              className="col-span-1 border border-gray-400 px-1 bg-white text-center"
+            />
+            <select
+              value={editForm.type}
+              onChange={(e) => setEditForm({...editForm, type: e.target.value as TreeItemData['type']})}
+              className="col-span-1 border border-gray-400 px-1 bg-white text-xs"
+            >
+              <option value="location">{t('type.location')}</option>
+              <option value="equipment">{t('type.equipment')}</option>
+              <option value="assembly">{t('type.assembly')}</option>
+              <option value="part">{t('type.part')}</option>
+            </select>
+            <div className="col-span-3 flex gap-1">
+              <button 
+                onClick={handleSave}
+                className="bg-green-200 hover:bg-green-300 px-1 border border-gray-400 text-xs"
+              >
+                ✓
+              </button>
+              <button 
+                onClick={handleCancel}
+                className="bg-red-200 hover:bg-red-300 px-1 border border-gray-400 text-xs"
+              >
+                ✗
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 grid grid-cols-12 gap-1 py-1 text-xs">
+            <div className="col-span-2 text-blue-600">{item.code}</div>
+            <div className="col-span-4">{item.description}</div>
+            <div className="col-span-1 text-center">{item.quantity || ''}</div>
+            <div className="col-span-1 text-center">{item.unit || ''}</div>
+            <div className="col-span-1 text-center">
+              {item.type === 'location' && '🏭'}
+              {item.type === 'equipment' && '🔧'}
+              {item.type === 'assembly' && '📦'}
+              {item.type === 'part' && '🔩'}
+            </div>
+            <div className="col-span-3 flex gap-1">
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="bg-gray-200 hover:bg-gray-300 px-1 border border-gray-400 text-xs"
+                title={t('tree.edit')}
+              >
+                ✏️
+              </button>
+              <button 
+                onClick={() => onAdd(item.id)}
+                className="bg-blue-200 hover:bg-blue-300 px-1 border border-gray-400 text-xs"
+                title={t('tree.add')}
+              >
+                ➕
+              </button>
+              <button 
+                onClick={() => onDelete(item.id)}
+                className="bg-red-200 hover:bg-red-300 px-1 border border-gray-400 text-xs"
+                title={t('tree.remove')}
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {hasChildren && isExpanded && (
+        <div>
+          {sortTreeByID(item.children!).map((child) => (
+            <TreeItem 
+              key={child.id} 
+              item={child} 
+              level={level + 1}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              onAdd={onAdd}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface SapClassicTreeEnhancedProps {
+  data?: TreeItemData[];
+  onDataChange?: (data: TreeItemData[]) => void;
+  onExportCSV?: () => void;
+}
+
+export function SapClassicTreeEnhanced({ data = defaultTreeData, onDataChange, onExportCSV }: SapClassicTreeEnhancedProps) {
+  const [treeData, setTreeData] = useState<TreeItemData[]>(data.length > 0 ? sortTreeByID(data) : sortTreeByID(defaultTreeData));
+  const { t } = useLanguage();
+
+  // Update internal state when data prop changes
+  useEffect(() => {
+    if (data && data.length > 0) {
+      setTreeData(sortTreeByID(data));
+    }
+  }, [data]);
+  
+  const updateTreeData = (newData: TreeItemData[]) => {
+    const sortedData = sortTreeByID(newData);
+    setTreeData(sortedData);
+    onDataChange?.(sortedData);
+  };
+
+  const findAndUpdateItem = (items: TreeItemData[], targetId: string, updatedItem: TreeItemData): TreeItemData[] => {
+    return items.map(item => {
+      if (item.id === targetId) {
+        return { ...updatedItem, children: item.children };
+      }
+      if (item.children) {
+        return {
+          ...item,
+          children: findAndUpdateItem(item.children, targetId, updatedItem)
+        };
+      }
+      return item;
+    });
+  };
+
+  const findAndDeleteItem = (items: TreeItemData[], targetId: string): TreeItemData[] => {
+    return items.filter(item => {
+      if (item.id === targetId) {
+        return false;
+      }
+      if (item.children) {
+        item.children = findAndDeleteItem(item.children, targetId);
+      }
+      return true;
+    });
+  };
+
+  const addNewItem = (parentId: string) => {
+    const newId = (Math.max(...getAllIds(treeData)) + 1).toString();
+    const newItem: TreeItemData = {
+      id: newId,
+      code: 'NEW-' + newId,
+      description: 'New Item',
+      type: 'part',
+      quantity: 1,
+      unit: 'EA'
+    };
+
+    const addToParent = (items: TreeItemData[]): TreeItemData[] => {
+      return items.map(item => {
+        if (item.id === parentId) {
+          return {
+            ...item,
+            children: [...(item.children || []), newItem]
+          };
+        }
+        if (item.children) {
+          return {
+            ...item,
+            children: addToParent(item.children)
+          };
+        }
+        return item;
+      });
+    };
+
+    updateTreeData(addToParent(treeData));
+  };
+
+  const getAllIds = (items: TreeItemData[]): number[] => {
+    const ids: number[] = [];
+    items.forEach(item => {
+      const numId = parseInt(item.id);
+      if (!isNaN(numId)) ids.push(numId);
+      if (item.children) {
+        ids.push(...getAllIds(item.children));
+      }
+    });
+    return ids;
+  };
+
+  const handleUpdate = (updatedItem: TreeItemData) => {
+    updateTreeData(findAndUpdateItem(treeData, updatedItem.id, updatedItem));
+  };
+
+  const handleDelete = (id: string) => {
+    updateTreeData(findAndDeleteItem(treeData, id));
+  };
+
+  const exportToCSV = () => {
+    const flattenTree = (items: TreeItemData[], parentId: string = ''): any[] => {
+      const result: any[] = [];
+      items.forEach(item => {
+        result.push({
+          id: item.id,
+          code: item.code,
+          description: item.description,
+          type: item.type,
+          quantity: item.quantity || '',
+          unit: item.unit || '',
+          parentId: parentId
+        });
+        if (item.children) {
+          result.push(...flattenTree(item.children, item.id));
+        }
+      });
+      return result;
+    };
+
+    const flatData = flattenTree(treeData);
+    const headers = ['id', 'code', 'description', 'type', 'quantity', 'unit', 'parentId'];
+    const csvContent = [
+      headers.join(','),
+      ...flatData.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sap_hierarchy_export.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  
+  return (
+    <div className="bg-white border border-gray-400 h-full overflow-auto">
+      {/* Header */}
+      <div className="bg-gray-100 border-b border-gray-400 p-2">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs">{t('main.technical_position')}</span>
+          <input 
+            type="text" 
+            value={getFirstRootCode(treeData)} 
+            className="border border-gray-400 px-1 py-0 text-xs w-24 bg-white"
+            readOnly
+          />
+        </div>
+        
+        <div className="flex items-center gap-4 text-xs">
+          <span>{t('main.designation')}</span>
+        </div>
+      </div>
+      
+      {/* Column Headers */}
+      <div className="bg-gray-200 border-b border-gray-400 p-1">
+        <div className="grid grid-cols-12 gap-1 text-xs">
+          <div className="col-span-2">{t('tree.code')}</div>
+          <div className="col-span-4">{t('tree.description')}</div>
+          <div className="col-span-1 text-center">{t('tree.quantity')}</div>
+          <div className="col-span-1 text-center">{t('tree.unit')}</div>
+          <div className="col-span-1 text-center">{t('tree.type')}</div>
+          <div className="col-span-3 text-center">Actions</div>
+        </div>
+      </div>
+      
+      {/* Tree Content */}
+      <div>
+        {treeData.map((item) => (
+          <TreeItem 
+            key={item.id} 
+            item={item} 
+            level={0}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            onAdd={addNewItem}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
