@@ -1,5 +1,7 @@
 # IH01 Simulator – SAP-Style Hierarchy Viewer
 
+[![View Demo](https://img.shields.io/badge/Open_App-Live-blue?style=for-the-badge)](https://samir32.github.io/IH01_simulator/)
+
 A lightweight web application that replicates the look and behavior of the SAP IH01 transaction to visualize and manage equipment hierarchies.  
 Built with **React**, **TypeScript**, and **Tailwind CSS**, this tool lets you explore and edit hierarchies locally without needing a CMMS or SAP upload.
 
