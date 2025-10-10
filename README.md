@@ -42,7 +42,7 @@ Features:
 
 ## 🌐 Bilingual Interface
 
-- 🇫🇷 French and 🇬🇧 English available  
+- French and English available  
 - Menus, labels, and tooltips translated  
 - Language selector in the toolbar  
 
