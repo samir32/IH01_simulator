@@ -11,7 +11,7 @@ interface LanguageContextType {
 const translations = {
   fr: {
     // Window Title
-    'sap': 'Generic CMMS',
+    'sap': 'IH01 Simulator',
     
     // Menu Bar
     'menu.edit': 'Éditer',
@@ -69,7 +69,7 @@ const translations = {
   },
   en: {
     // Window Title
-    'sap': 'Generic CMMS',
+    'sap': 'IH01 Simulator',
     
     // Menu Bar
     'menu.edit': 'Edit',
