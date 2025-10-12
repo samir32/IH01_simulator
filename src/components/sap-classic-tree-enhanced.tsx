@@ -360,14 +360,24 @@ interface SapClassicTreeEnhancedProps {
 }
 
 export function SapClassicTreeEnhanced({ data = defaultTreeData, onDataChange, onExportCSV }: SapClassicTreeEnhancedProps) {
-  const [treeData, setTreeData] = useState<TreeItemData[]>(data.length > 0 ? sortTreeByID(data) : sortTreeByID(defaultTreeData));
+  const [treeData, setTreeData] = useState<TreeItemData[]>(() =>
+    sortTreeByID(data && data.length > 0 ? data : defaultTreeData)
+  );
   const { t } = useLanguage();
 
   // Update internal state when data prop changes
   useEffect(() => {
-    if (data && data.length > 0) {
-      setTreeData(sortTreeByID(data));
+    if (!Array.isArray(data)) {
+      setTreeData(sortTreeByID(defaultTreeData));
+      return;
     }
+
+    if (data.length === 0) {
+      setTreeData([]);
+      return;
+    }
+
+    setTreeData(sortTreeByID(data));
   }, [data]);
   
   const updateTreeData = (newData: TreeItemData[]) => {
@@ -392,22 +402,54 @@ export function SapClassicTreeEnhanced({ data = defaultTreeData, onDataChange, o
   };
 
   const findAndDeleteItem = (items: TreeItemData[], targetId: string): TreeItemData[] => {
-    return items.filter(item => {
+    let changed = false;
+
+    const nextItems = items.reduce<TreeItemData[]>((acc, item) => {
       if (item.id === targetId) {
-        return false;
+        changed = true;
+        return acc;
       }
+
       if (item.children) {
-        item.children = findAndDeleteItem(item.children, targetId);
+        const updatedChildren = findAndDeleteItem(item.children, targetId);
+        if (updatedChildren !== item.children) {
+          changed = true;
+          acc.push({
+            ...item,
+            children: updatedChildren.length > 0 ? updatedChildren : undefined
+          });
+          return acc;
+        }
       }
-      return true;
-    });
+
+      acc.push(item);
+      return acc;
+    }, []);
+
+    return changed ? nextItems : items;
   };
 
   const addNewItem = (parentId: string) => {
-    const newId = (Math.max(...getAllIds(treeData)) + 1).toString();
+    const existingIds = new Set(collectAllIds(treeData));
+    const numericIds = collectNumericIds(treeData);
+
+    let candidateId: string;
+
+    if (numericIds.length > 0) {
+      let nextNumericId = Math.max(...numericIds) + 1;
+      while (existingIds.has(nextNumericId.toString())) {
+        nextNumericId += 1;
+      }
+      candidateId = nextNumericId.toString();
+    } else {
+      candidateId = generateStringId(existingIds);
+    }
+
+    const newCode = candidateId.startsWith('NEW-') ? candidateId : `NEW-${candidateId}`;
+
     const newItem: TreeItemData = {
-      id: newId,
-      code: 'NEW-' + newId,
+      id: candidateId,
+      code: newCode,
       description: 'New Item',
       type: 'part',
       quantity: 1,
@@ -435,16 +477,34 @@ export function SapClassicTreeEnhanced({ data = defaultTreeData, onDataChange, o
     updateTreeData(addToParent(treeData));
   };
 
-  const getAllIds = (items: TreeItemData[]): number[] => {
-    const ids: number[] = [];
+  const collectAllIds = (items: TreeItemData[]): string[] => {
+    const ids: string[] = [];
     items.forEach(item => {
-      const numId = parseInt(item.id);
-      if (!isNaN(numId)) ids.push(numId);
+      ids.push(item.id);
       if (item.children) {
-        ids.push(...getAllIds(item.children));
+        ids.push(...collectAllIds(item.children));
       }
     });
     return ids;
+  };
+
+  const collectNumericIds = (items: TreeItemData[]): number[] => {
+    return collectAllIds(items)
+      .map(id => Number.parseInt(id, 10))
+      .filter(num => Number.isFinite(num));
+  };
+
+  const generateStringId = (existingIds: Set<string>): string => {
+    const createCandidate = () => {
+      const base = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2, 10).toUpperCase();
+      return base.startsWith('NEW-') ? base : `NEW-${base}`;
+    };
+
+    let candidate = createCandidate();
+    while (existingIds.has(candidate)) {
+      candidate = createCandidate();
+    }
+    return candidate;
   };
 
   const handleUpdate = (updatedItem: TreeItemData) => {
