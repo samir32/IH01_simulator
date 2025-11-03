@@ -518,17 +518,6 @@
     grid-template-columns: repeat(12, minmax(0, 1fr));
   }
 
-  .tree-grid {
-    grid-template-columns:
-      minmax(0, 2fr)
-      minmax(0, 4fr)
-      minmax(0, 1fr)
-      minmax(0, 1fr)
-      minmax(0, 1fr)
-      minmax(0, 2.5fr)
-      minmax(0, 2fr);
-  }
-
   .min-w-0 {
     min-width: 0;
   }

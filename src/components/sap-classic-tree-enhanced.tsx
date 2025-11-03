@@ -345,7 +345,7 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
         </button>
         
         {isEditing ? (
-          <div className="flex-1 min-w-0 grid tree-grid gap-1 py-1 text-xs items-center">
+          <div className="flex-1 min-w-0 grid grid-cols-[2fr_4fr_1fr_1fr_1fr_2.5fr_2fr] gap-1 py-1 text-xs items-center">
             <input
               type="text"
               value={editForm.code}
@@ -407,7 +407,7 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
             </div>
           </div>
         ) : (
-          <div className="flex-1 min-w-0 grid tree-grid gap-1 py-1 text-xs items-center">
+          <div className="flex-1 min-w-0 grid grid-cols-[2fr_4fr_1fr_1fr_1fr_2.5fr_2fr] gap-1 py-1 text-xs items-center">
             <div className="text-blue-600 whitespace-nowrap min-w-0">{item.code}</div>
             <div className="truncate min-w-0" title={item.description}>{item.description}</div>
             <div className="text-center whitespace-nowrap min-w-0">{item.quantity || ''}</div>
@@ -754,7 +754,7 @@ export function SapClassicTreeEnhanced({ data = defaultTreeData, onDataChange, o
       
       {/* Column Headers */}
       <div className="bg-gray-200 border-b border-gray-400 p-1">
-        <div className="grid tree-grid gap-1 text-xs">
+        <div className="grid grid-cols-[2fr_4fr_1fr_1fr_1fr_2.5fr_2fr] gap-1 text-xs">
           <div className="min-w-0">{t('tree.code')}</div>
           <div className="min-w-0">{t('tree.description')}</div>
           <div className="text-center min-w-0">{t('tree.quantity')}</div>
