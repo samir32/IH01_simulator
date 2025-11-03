@@ -518,6 +518,20 @@
     grid-template-columns: repeat(12, minmax(0, 1fr));
   }
 
+  .tree-grid {
+    grid-template-columns: 2fr 4fr 1fr 1fr 1fr 2.5fr 2fr;
+  }
+
+  .min-w-0 {
+    min-width: 0;
+  }
+
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .flex-col {
     flex-direction: column;
   }
@@ -532,6 +546,10 @@
 
   .justify-center {
     justify-content: center;
+  }
+
+  .justify-end {
+    justify-content: flex-end;
   }
 
   .gap-1 {
