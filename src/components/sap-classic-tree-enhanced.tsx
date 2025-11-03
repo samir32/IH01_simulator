@@ -345,35 +345,35 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
         </button>
         
         {isEditing ? (
-          <div className="flex-1 min-w-0 grid grid-cols-[2fr_4fr_1fr_1fr_1fr_2.5fr_2fr] gap-1 py-1 text-xs">
+          <div className="flex-1 min-w-0 grid grid-cols-[2fr_4fr_1fr_1fr_1fr_2.5fr_2fr] gap-1 py-1 text-xs items-center">
             <input
               type="text"
               value={editForm.code}
               onChange={(e) => setEditForm({...editForm, code: e.target.value})}
-              className="border border-gray-400 px-1 bg-white min-w-0"
+              className="border border-gray-400 px-1 bg-white min-w-0 truncate"
             />
             <input
               type="text"
               value={editForm.description}
               onChange={(e) => setEditForm({...editForm, description: e.target.value})}
-              className="border border-gray-400 px-1 bg-white min-w-0"
+              className="border border-gray-400 px-1 bg-white min-w-0 truncate"
             />
             <input
               type="text"
               value={editForm.quantity}
               onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
-              className="border border-gray-400 px-1 bg-white text-center min-w-0"
+              className="border border-gray-400 px-1 bg-white text-center min-w-0 truncate"
             />
             <input
               type="text"
               value={editForm.unit}
               onChange={(e) => setEditForm({...editForm, unit: e.target.value})}
-              className="border border-gray-400 px-1 bg-white text-center min-w-0"
+              className="border border-gray-400 px-1 bg-white text-center min-w-0 truncate"
             />
             <select
               value={editForm.type}
               onChange={(e) => setEditForm({...editForm, type: e.target.value as TreeItemData['type']})}
-              className="border border-gray-400 px-1 bg-white text-xs min-w-0"
+              className="border border-gray-400 px-1 bg-white text-xs min-w-0 truncate"
             >
               <option value="location">{t('type.location')}</option>
               <option value="equipment">{t('type.equipment')}</option>
@@ -383,7 +383,7 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
             <select
               value={editForm.parentId}
               onChange={(e) => setEditForm({ ...editForm, parentId: e.target.value })}
-              className="border border-gray-400 px-1 bg-white text-xs min-w-0"
+              className="border border-gray-400 px-1 bg-white text-xs min-w-0 truncate"
             >
               {parentOptions.map(option => (
                 <option key={option.id ?? 'root'} value={option.id ?? ''}>
@@ -407,7 +407,7 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
             </div>
           </div>
         ) : (
-          <div className="flex-1 min-w-0 grid grid-cols-[2fr_4fr_1fr_1fr_1fr_2.5fr_2fr] gap-1 py-1 text-xs">
+          <div className="flex-1 min-w-0 grid grid-cols-[2fr_4fr_1fr_1fr_1fr_2.5fr_2fr] gap-1 py-1 text-xs items-center">
             <div className="text-blue-600 whitespace-nowrap">{item.code}</div>
             <div className="truncate" title={item.description}>{item.description}</div>
             <div className="text-center whitespace-nowrap">{item.quantity || ''}</div>
