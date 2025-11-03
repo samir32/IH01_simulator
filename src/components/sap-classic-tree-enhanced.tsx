@@ -344,7 +344,7 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
           {getIcon()}
         </button>
         
-        {isEditing ? (
+      {isEditing ? (
           <div className="flex-1 min-w-0 grid grid-cols-[2fr_4fr_1fr_1fr_1fr_2.5fr_2fr] gap-1 py-1 text-xs items-center">
             <input
               type="text"
