@@ -391,7 +391,7 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
                 </option>
               ))}
             </select>
-            <div className="flex gap-1 justify-end">
+            <div className="flex gap-1 justify-end min-w-0">
               <button
                 onClick={handleSave}
                 className="bg-green-200 hover:bg-green-300 px-1 border border-gray-400 text-xs"
@@ -408,20 +408,20 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
           </div>
         ) : (
           <div className="flex-1 min-w-0 grid tree-grid gap-1 py-1 text-xs items-center">
-            <div className="text-blue-600 whitespace-nowrap">{item.code}</div>
-            <div className="truncate" title={item.description}>{item.description}</div>
-            <div className="text-center whitespace-nowrap">{item.quantity || ''}</div>
-            <div className="text-center whitespace-nowrap">{item.unit || ''}</div>
-            <div className="text-center">
+            <div className="text-blue-600 whitespace-nowrap min-w-0">{item.code}</div>
+            <div className="truncate min-w-0" title={item.description}>{item.description}</div>
+            <div className="text-center whitespace-nowrap min-w-0">{item.quantity || ''}</div>
+            <div className="text-center whitespace-nowrap min-w-0">{item.unit || ''}</div>
+            <div className="text-center min-w-0">
               {item.type === 'location' && '🏭'}
               {item.type === 'equipment' && '🔧'}
               {item.type === 'assembly' && '📦'}
               {item.type === 'part' && '🔩'}
             </div>
-            <div className="truncate" title={currentParentLabel}>
+            <div className="truncate min-w-0" title={currentParentLabel}>
               {currentParentLabel}
             </div>
-            <div className="flex gap-1 justify-end">
+            <div className="flex gap-1 justify-end min-w-0">
               <button
                 onClick={startEditing}
                 className="bg-gray-200 hover:bg-gray-300 px-1 border border-gray-400 text-xs"
@@ -755,13 +755,13 @@ export function SapClassicTreeEnhanced({ data = defaultTreeData, onDataChange, o
       {/* Column Headers */}
       <div className="bg-gray-200 border-b border-gray-400 p-1">
         <div className="grid tree-grid gap-1 text-xs">
-          <div>{t('tree.code')}</div>
-          <div>{t('tree.description')}</div>
-          <div className="text-center">{t('tree.quantity')}</div>
-          <div className="text-center">{t('tree.unit')}</div>
-          <div className="text-center">{t('tree.type')}</div>
-          <div className="text-center">Parent</div>
-          <div className="text-center">Actions</div>
+          <div className="min-w-0">{t('tree.code')}</div>
+          <div className="min-w-0">{t('tree.description')}</div>
+          <div className="text-center min-w-0">{t('tree.quantity')}</div>
+          <div className="text-center min-w-0">{t('tree.unit')}</div>
+          <div className="text-center min-w-0">{t('tree.type')}</div>
+          <div className="text-center min-w-0">Parent</div>
+          <div className="text-center min-w-0">Actions</div>
         </div>
       </div>
 

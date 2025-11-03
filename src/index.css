@@ -519,7 +519,14 @@
   }
 
   .tree-grid {
-    grid-template-columns: 2fr 4fr 1fr 1fr 1fr 2.5fr 2fr;
+    grid-template-columns:
+      minmax(0, 2fr)
+      minmax(0, 4fr)
+      minmax(0, 1fr)
+      minmax(0, 1fr)
+      minmax(0, 1fr)
+      minmax(0, 2.5fr)
+      minmax(0, 2fr);
   }
 
   .min-w-0 {
