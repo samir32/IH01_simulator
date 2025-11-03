@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from './language-context';
 
 export interface TreeItemData {
@@ -151,84 +151,15 @@ function getFirstRootCode(data: TreeItemData[]): string {
   return '031T2-K2'; // fallback
 }
 
-interface FlattenedNode {
-  id: string;
-  code: string;
-  pathDescriptions: string[];
-}
-
-function flattenTreeWithPaths(items: TreeItemData[], ancestors: TreeItemData[] = []): FlattenedNode[] {
-  const result: FlattenedNode[] = [];
-
-  items.forEach(item => {
-    const currentPath = [...ancestors, item];
-    result.push({
-      id: item.id,
-      code: item.code,
-      pathDescriptions: currentPath.map(node => node.description || node.code)
-    });
-
-    if (item.children) {
-      result.push(...flattenTreeWithPaths(item.children, currentPath));
-    }
-  });
-
-  return result;
-}
-
-function findItemById(items: TreeItemData[], targetId: string): TreeItemData | null {
-  for (const item of items) {
-    if (item.id === targetId) {
-      return item;
-    }
-
-    if (item.children) {
-      const found = findItemById(item.children, targetId);
-      if (found) {
-        return found;
-      }
-    }
-  }
-
-  return null;
-}
-
-function collectDescendantIds(item: TreeItemData | null): Set<string> {
-  const ids = new Set<string>();
-
-  if (!item) {
-    return ids;
-  }
-
-  const stack = [...(item.children ?? [])];
-
-  while (stack.length > 0) {
-    const current = stack.pop()!;
-    ids.add(current.id);
-    if (current.children) {
-      stack.push(...current.children);
-    }
-  }
-
-  return ids;
-}
-
-interface ParentOption {
-  id: string | null;
-  label: string;
-}
-
 interface TreeItemProps {
   item: TreeItemData;
   level: number;
-  parentId: string | null;
-  getParentOptions: (itemId: string) => ParentOption[];
-  onUpdate: (item: TreeItemData, newParentId: string | null, previousParentId: string | null) => void;
+  onUpdate: (item: TreeItemData) => void;
   onDelete: (id: string) => void;
   onAdd: (parentId: string) => void;
 }
 
-function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete, onAdd }: TreeItemProps) {
+function TreeItem({ item, level, onUpdate, onDelete, onAdd }: TreeItemProps) {
   const [isExpanded, setIsExpanded] = useState(item.isExpanded || false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -236,27 +167,12 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
     description: item.description,
     type: item.type,
     quantity: item.quantity?.toString() || '',
-    unit: item.unit || '',
-    parentId: parentId ?? ''
+    unit: item.unit || ''
   });
   const { t } = useLanguage();
-  const parentOptions = useMemo(() => getParentOptions(item.id), [getParentOptions, item.id]);
-
-  useEffect(() => {
-    if (!isEditing) {
-      setEditForm({
-        code: item.code,
-        description: item.description,
-        type: item.type,
-        quantity: item.quantity?.toString() || '',
-        unit: item.unit || '',
-        parentId: parentId ?? ''
-      });
-    }
-  }, [item, parentId, isEditing]);
-
+  
   const hasChildren = item.children && item.children.length > 0;
-
+  
   const getIcon = () => {
     if (hasChildren) {
       return isExpanded ? '⊟' : '⊞';
@@ -301,34 +217,19 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
       quantity: editForm.quantity ? parseInt(editForm.quantity) : undefined,
       unit: editForm.unit || undefined
     };
-    onUpdate(updatedItem, editForm.parentId ? editForm.parentId : null, parentId);
+    onUpdate(updatedItem);
     setIsEditing(false);
   };
-
+  
   const handleCancel = () => {
     setEditForm({
       code: item.code,
       description: item.description,
       type: item.type,
       quantity: item.quantity?.toString() || '',
-      unit: item.unit || '',
-      parentId: parentId ?? ''
+      unit: item.unit || ''
     });
     setIsEditing(false);
-  };
-
-  const currentParentLabel = parentOptions.find(option => option.id === (parentId ?? null))?.label || '(root level)';
-
-  const startEditing = () => {
-    setEditForm({
-      code: item.code,
-      description: item.description,
-      type: item.type,
-      quantity: item.quantity?.toString() || '',
-      unit: item.unit || '',
-      parentId: parentId ?? ''
-    });
-    setIsEditing(true);
   };
   
   return (
@@ -345,54 +246,43 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
         </button>
         
         {isEditing ? (
-          <div className="flex-1 grid grid-cols-[2fr_4fr_1fr_1fr_1fr_2fr_2fr] gap-1 py-1 text-xs">
+          <div className="flex-1 grid grid-cols-12 gap-1 py-1 text-xs">
             <input
               type="text"
               value={editForm.code}
               onChange={(e) => setEditForm({...editForm, code: e.target.value})}
-              className="border border-gray-400 px-1 bg-white"
+              className="col-span-2 border border-gray-400 px-1 bg-white"
             />
             <input
               type="text"
               value={editForm.description}
               onChange={(e) => setEditForm({...editForm, description: e.target.value})}
-              className="border border-gray-400 px-1 bg-white"
+              className="col-span-4 border border-gray-400 px-1 bg-white"
             />
             <input
               type="text"
               value={editForm.quantity}
               onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
-              className="border border-gray-400 px-1 bg-white text-center"
+              className="col-span-1 border border-gray-400 px-1 bg-white text-center"
             />
             <input
               type="text"
               value={editForm.unit}
               onChange={(e) => setEditForm({...editForm, unit: e.target.value})}
-              className="border border-gray-400 px-1 bg-white text-center"
+              className="col-span-1 border border-gray-400 px-1 bg-white text-center"
             />
             <select
               value={editForm.type}
               onChange={(e) => setEditForm({...editForm, type: e.target.value as TreeItemData['type']})}
-              className="border border-gray-400 px-1 bg-white text-xs"
+              className="col-span-1 border border-gray-400 px-1 bg-white text-xs"
             >
               <option value="location">{t('type.location')}</option>
               <option value="equipment">{t('type.equipment')}</option>
               <option value="assembly">{t('type.assembly')}</option>
               <option value="part">{t('type.part')}</option>
             </select>
-            <select
-              value={editForm.parentId}
-              onChange={(e) => setEditForm({ ...editForm, parentId: e.target.value })}
-              className="border border-gray-400 px-1 bg-white text-xs"
-            >
-              {parentOptions.map(option => (
-                <option key={option.id ?? 'root'} value={option.id ?? ''}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <div className="flex gap-1 justify-end">
-              <button
+            <div className="col-span-3 flex gap-1">
+              <button 
                 onClick={handleSave}
                 className="bg-green-200 hover:bg-green-300 px-1 border border-gray-400 text-xs"
               >
@@ -407,23 +297,20 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
             </div>
           </div>
         ) : (
-          <div className="flex-1 grid grid-cols-[2fr_4fr_1fr_1fr_1fr_2fr_2fr] gap-1 py-1 text-xs">
-            <div className="text-blue-600">{item.code}</div>
-            <div>{item.description}</div>
-            <div className="text-center">{item.quantity || ''}</div>
-            <div className="text-center">{item.unit || ''}</div>
-            <div className="text-center">
+          <div className="flex-1 grid grid-cols-12 gap-1 py-1 text-xs">
+            <div className="col-span-2 text-blue-600">{item.code}</div>
+            <div className="col-span-4">{item.description}</div>
+            <div className="col-span-1 text-center">{item.quantity || ''}</div>
+            <div className="col-span-1 text-center">{item.unit || ''}</div>
+            <div className="col-span-1 text-center">
               {item.type === 'location' && '🏭'}
               {item.type === 'equipment' && '🔧'}
               {item.type === 'assembly' && '📦'}
               {item.type === 'part' && '🔩'}
             </div>
-            <div className="truncate" title={currentParentLabel}>
-              {currentParentLabel}
-            </div>
-            <div className="flex gap-1 justify-end">
-              <button
-                onClick={startEditing}
+            <div className="col-span-3 flex gap-1">
+              <button 
+                onClick={() => setIsEditing(true)}
                 className="bg-gray-200 hover:bg-gray-300 px-1 border border-gray-400 text-xs"
                 title={t('tree.edit')}
               >
@@ -451,12 +338,10 @@ function TreeItem({ item, level, parentId, getParentOptions, onUpdate, onDelete,
       {hasChildren && isExpanded && (
         <div>
           {sortTreeByID(item.children!).map((child) => (
-            <TreeItem
-              key={child.id}
-              item={child}
+            <TreeItem 
+              key={child.id} 
+              item={child} 
               level={level + 1}
-              parentId={item.id}
-              getParentOptions={getParentOptions}
               onUpdate={onUpdate}
               onDelete={onDelete}
               onAdd={onAdd}
@@ -479,23 +364,6 @@ export function SapClassicTreeEnhanced({ data = defaultTreeData, onDataChange, o
     sortTreeByID(data && data.length > 0 ? data : defaultTreeData)
   );
   const { t } = useLanguage();
-  const flattenedNodes = useMemo(() => flattenTreeWithPaths(treeData), [treeData]);
-
-  const getParentOptions = useCallback((itemId: string): ParentOption[] => {
-    const currentItem = findItemById(treeData, itemId);
-    const excludedIds = new Set<string>([itemId]);
-
-    collectDescendantIds(currentItem).forEach(id => excludedIds.add(id));
-
-    const options = flattenedNodes
-      .filter(node => !excludedIds.has(node.id))
-      .map(node => ({
-        id: node.id,
-        label: `${node.pathDescriptions.join(' / ')} (${node.code})`
-      }));
-
-    return [{ id: null, label: '(root level)' }, ...options];
-  }, [flattenedNodes, treeData]);
 
   // Update internal state when data prop changes
   useEffect(() => {
@@ -639,56 +507,8 @@ export function SapClassicTreeEnhanced({ data = defaultTreeData, onDataChange, o
     return candidate;
   };
 
-  const handleUpdate = (updatedItem: TreeItemData, newParentId: string | null, previousParentId: string | null) => {
-    if (newParentId === previousParentId) {
-      updateTreeData(findAndUpdateItem(treeData, updatedItem.id, updatedItem));
-      return;
-    }
-
-    const treeWithoutItem = findAndDeleteItem(treeData, updatedItem.id);
-
-    if (newParentId === null) {
-      updateTreeData([...treeWithoutItem, updatedItem]);
-      return;
-    }
-
-    const insertIntoParent = (items: TreeItemData[]): [TreeItemData[], boolean] => {
-      let inserted = false;
-
-      const nextItems = items.map(item => {
-        if (item.id === newParentId) {
-          inserted = true;
-          return {
-            ...item,
-            children: [...(item.children || []), updatedItem]
-          };
-        }
-
-        if (item.children) {
-          const [updatedChildren, childInserted] = insertIntoParent(item.children);
-          if (childInserted) {
-            inserted = true;
-            return {
-              ...item,
-              children: updatedChildren
-            };
-          }
-        }
-
-        return item;
-      });
-
-      return [inserted ? nextItems : items, inserted];
-    };
-
-    const [treeWithInserted, inserted] = insertIntoParent(treeWithoutItem);
-
-    if (!inserted) {
-      updateTreeData([...treeWithoutItem, updatedItem]);
-      return;
-    }
-
-    updateTreeData(treeWithInserted);
+  const handleUpdate = (updatedItem: TreeItemData) => {
+    updateTreeData(findAndUpdateItem(treeData, updatedItem.id, updatedItem));
   };
 
   const handleDelete = (id: string) => {
@@ -754,26 +574,23 @@ export function SapClassicTreeEnhanced({ data = defaultTreeData, onDataChange, o
       
       {/* Column Headers */}
       <div className="bg-gray-200 border-b border-gray-400 p-1">
-        <div className="grid grid-cols-[2fr_4fr_1fr_1fr_1fr_2fr_2fr] gap-1 text-xs">
-          <div>{t('tree.code')}</div>
-          <div>{t('tree.description')}</div>
-          <div className="text-center">{t('tree.quantity')}</div>
-          <div className="text-center">{t('tree.unit')}</div>
-          <div className="text-center">{t('tree.type')}</div>
-          <div className="text-center">Parent</div>
-          <div className="text-center">Actions</div>
+        <div className="grid grid-cols-12 gap-1 text-xs">
+          <div className="col-span-2">{t('tree.code')}</div>
+          <div className="col-span-4">{t('tree.description')}</div>
+          <div className="col-span-1 text-center">{t('tree.quantity')}</div>
+          <div className="col-span-1 text-center">{t('tree.unit')}</div>
+          <div className="col-span-1 text-center">{t('tree.type')}</div>
+          <div className="col-span-3 text-center">Actions</div>
         </div>
       </div>
-
+      
       {/* Tree Content */}
       <div>
         {treeData.map((item) => (
-          <TreeItem
-            key={item.id}
-            item={item}
+          <TreeItem 
+            key={item.id} 
+            item={item} 
             level={0}
-            parentId={null}
-            getParentOptions={getParentOptions}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
             onAdd={addNewItem}
